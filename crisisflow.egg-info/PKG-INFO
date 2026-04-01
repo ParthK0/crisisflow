@@ -1,0 +1,13 @@
+Metadata-Version: 2.4
+Name: crisisflow
+Version: 1.0.0
+Summary: Crisis management sequential environment (OpenEnv-compatible)
+Requires-Python: >=3.10
+Requires-Dist: fastapi>=0.109.0
+Requires-Dist: uvicorn[standard]>=0.27.0
+Requires-Dist: pydantic>=2.5.0
+Requires-Dist: PyYAML>=6.0.1
+Requires-Dist: httpx>=0.26.0
+Dynamic: requires-dist
+Dynamic: requires-python
+Dynamic: summary

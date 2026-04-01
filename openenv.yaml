@@ -1,0 +1,151 @@
+name: crisisflow
+version: "1.0.0"
+description: "CrisisFlow is a sequential disaster-response AI benchmark: agents observe multi-zone incidents, allocate ambulances, rescue teams, and food under time pressure, and optimize casualty avoidance and cascade risk."
+
+environment:
+  type: sequential
+  api_version: "1.0"
+  base_url: "http://localhost:7860"
+  endpoints:
+    reset: POST /reset
+    step: POST /step
+    state: GET /state
+    tasks: GET /tasks
+
+observation_space:
+  type: object
+  description: "DisasterState — all zones, global resource pool, clocks, and cumulative reward."
+  properties:
+    zones:
+      type: array
+      description: "Active incident zones."
+      items:
+        type: object
+        properties:
+          zone_id:
+            type: string
+          disaster_type:
+            type: string
+            enum: [flood, earthquake, fire, disease]
+          severity:
+            type: number
+            minimum: 0
+            maximum: 1
+          survivors:
+            type: integer
+            minimum: 0
+          casualties:
+            type: integer
+            minimum: 0
+          resources_needed:
+            type: object
+            properties:
+              ambulances: { type: integer, minimum: 0 }
+              rescue_teams: { type: integer, minimum: 0 }
+              food_packets: { type: integer, minimum: 0 }
+            required: [ambulances, rescue_teams, food_packets]
+          time_critical:
+            type: boolean
+          accessibility:
+            type: number
+            minimum: 0
+            maximum: 1
+          contained:
+            type: boolean
+        required:
+          - zone_id
+          - disaster_type
+          - severity
+          - survivors
+          - casualties
+          - resources_needed
+          - time_critical
+          - accessibility
+          - contained
+    resources:
+      type: object
+      description: "Deployable resource pool."
+      properties:
+        ambulances: { type: integer, minimum: 0 }
+        rescue_teams: { type: integer, minimum: 0 }
+        food_packets: { type: integer, minimum: 0 }
+      required: [ambulances, rescue_teams, food_packets]
+    time_remaining:
+      type: integer
+      description: "Steps until forced episode end from the clock."
+    step_count:
+      type: integer
+      minimum: 0
+      description: "Number of step() calls completed this episode."
+    cumulative_reward:
+      type: number
+      description: "Running sum of per-step reward (aligned with reward decomposition weights)."
+    task_id:
+      type: string
+      description: "Active task key (e.g. task_easy)."
+    seed:
+      type: integer
+      description: "PRNG seed for this episode."
+  required:
+    - zones
+    - resources
+    - time_remaining
+    - step_count
+    - cumulative_reward
+    - task_id
+    - seed
+
+action_space:
+  type: object
+  description: "Action — batch deployments from the pool to zones."
+  properties:
+    deployments:
+      type: array
+      items:
+        type: object
+        properties:
+          zone_id: { type: string }
+          ambulances: { type: integer, minimum: 0 }
+          rescue_teams: { type: integer, minimum: 0 }
+          food_packets: { type: integer, minimum: 0 }
+          priority: { type: integer, minimum: 1, maximum: 5 }
+        required: [zone_id, ambulances, rescue_teams, food_packets, priority]
+  required: [deployments]
+
+tasks:
+  - id: task_easy
+    name: "Localized incident"
+    difficulty: easy
+    max_steps: 10
+    pass_threshold: 0.75
+  - id: task_medium
+    name: "Regional disruption"
+    difficulty: medium
+    max_steps: 15
+    pass_threshold: 0.70
+  - id: task_hard
+    name: "Systemic crisis"
+    difficulty: hard
+    max_steps: 20
+    pass_threshold: 0.60
+
+reward:
+  type: object
+  description: "Scalar per-step reward is a weighted mix of normalized sub-scores."
+  components:
+    survivors_saved:
+      weight: 0.50
+      description: "Reduction in harm / effective aid to populations at risk."
+    response_time:
+      weight: 0.20
+      description: "Penalize delay; prioritize time-critical zones."
+    resource_efficiency:
+      weight: 0.15
+      description: "Favor useful deployments versus waste or idle pool."
+    cascade_prevention:
+      weight: 0.15
+      description: "Limit severity growth and cross-zone escalation."
+
+docker:
+  port: 7860
+  health_check: GET /health
