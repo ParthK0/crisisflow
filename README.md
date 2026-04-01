@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 ---
 title: Crisisflow
 emoji: 🌍
@@ -7,6 +8,8 @@ sdk: docker
 pinned: false
 ---
 
+=======
+>>>>>>> 8611b04 (CrisisFlow v1.0)
 # CrisisFlow
 
 Sequential crisis-management environment with an HTTP API compatible with the OpenEnv-style manifest in `openenv.yaml`.
