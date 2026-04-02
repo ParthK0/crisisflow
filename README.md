@@ -1,13 +1,14 @@
----
+﻿---
 title: CrisisFlow
-emoji: ??
+emoji: 🔥
 colorFrom: red
-colorTo: orange
+colorTo: red
 sdk: docker
 app_port: 7860
 pinned: false
 ---
-# CrisisFlow — AI Disaster Response Environment
+
+# CrisisFlow â€” AI Disaster Response Environment
 
 CrisisFlow is an OpenEnv environment where an AI agent acts as an emergency operations commander allocating limited resources across disaster zones to maximise survivor outcomes. The agent must balance competing priorities, manage dwindling supplies, and respond to dynamic, multi-hazard scenarios ranging from urban floods to systemic health crises.
 
@@ -41,9 +42,9 @@ The simulation operates on a discrete-time basis. Disasters spawn across multipl
 |-------|------|-------------|-------------|
 | `deployments` | `array` | List of resource allocations to zones | - |
 | `deployment.zone_id` | `string` | Target zone for the resources | Must exist in state |
-| `deployment.ambulances` | `int` | Number of ambulances to send | ≥ 0, sum ≤ pool |
-| `deployment.rescue_teams` | `int` | Number of rescue teams to send | ≥ 0, sum ≤ pool |
-| `deployment.food_packets` | `int` | Number of food packets to send | ≥ 0, sum ≤ pool |
+| `deployment.ambulances` | `int` | Number of ambulances to send | â‰¥ 0, sum â‰¤ pool |
+| `deployment.rescue_teams` | `int` | Number of rescue teams to send | â‰¥ 0, sum â‰¤ pool |
+| `deployment.food_packets` | `int` | Number of food packets to send | â‰¥ 0, sum â‰¤ pool |
 | `deployment.priority` | `int` | Processing order for the deployment | 1 - 5 |
 
 ## Tasks
@@ -132,4 +133,5 @@ docker run -p 7860:7860 crisisflow
 
 ## Hugging Face Space
 The environment and baseline agent can be viewed/deployed at: [https://huggingface.co/spaces/ParthK0/crisisflow](https://huggingface.co/spaces/ParthK0/crisisflow)
+
 
