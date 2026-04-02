@@ -132,6 +132,7 @@ docker run -p 7860:7860 crisisflow
 ```
 
 ## Hugging Face Space
-The environment and baseline agent can be viewed/deployed at: [https://huggingface.co/spaces/ParthK0/crisisflow](https://huggingface.co/spaces/ParthK0/crisisflow)
+The environment and baseline agent can be viewed/deployed at: [https://huggingface.co/spaces/parth22222/crisisflow](https://huggingface.co/spaces/parth22222/crisisflow)
+
 
 
