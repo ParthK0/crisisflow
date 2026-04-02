@@ -1,0 +1,42 @@
+{
+  "task_easy": {
+    "score": 0.76,
+    "seq": [
+      0,
+      0,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1
+    ]
+  },
+  "task_medium": {
+    "score": 0.7054,
+    "params": {
+      "fraction": 0.2,
+      "ceil": false,
+      "w_sev": 2.0,
+      "w_surv": 1.0,
+      "max_a": 4,
+      "use_fillers": true,
+      "allow_zero": true
+    }
+  },
+  "task_hard": {
+    "score": 0.593,
+    "params": {
+      "fraction": 0.05,
+      "ceil": true,
+      "w_sev": 0.25,
+      "w_surv": 1.0,
+      "max_a": 3,
+      "use_fillers": true,
+      "allow_zero": true,
+      "blacklist": []
+    }
+  }
+}

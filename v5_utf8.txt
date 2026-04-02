@@ -1,0 +1,59 @@
+﻿
+Running task_easy...
+  Step  1 | Score: 1.0000 | A=8 -> [z1(A0)] | Surv: [z1:49]
+  Step  2 | Score: 1.0000 | A=8 -> [z1(A0)] | Surv: [z1:47]
+  Step  3 | Score: 1.0000 | A=7 -> [z1(A1)] | Surv: [z1:47]
+  Step  4 | Score: 1.0000 | A=6 -> [z1(A1)] | Surv: [z1:46]
+  Step  5 | Score: 0.9680 | A=5 -> [z1(A1)] | Surv: [z1:44]
+  Step  6 | Score: 0.9288 | A=4 -> [z1(A1)] | Surv: [z1:43]
+  Step  7 | Score: 0.8692 | A=3 -> [z1(A1)] | Surv: [z1:41]
+  Step  8 | Score: 0.8320 | A=2 -> [z1(A1)] | Surv: [z1:40]
+  Step  9 | Score: 0.7956 | A=1 -> [z1(A1)] | Surv: [z1:39]
+  Step 10 | Score: 0.7600 | A=0 -> [z1(A1)] | Surv: [z1:38]
+
+Running task_medium...
+  Step  1 | Score: 0.8340 | A=7 -> [A(A1)+C(A0)+B(A0)] | Surv: [A:80 | B:38 | C:59]
+  Step  2 | Score: 0.7992 | A=6 -> [A(A1)+C(A0)+B(A0)] | Surv: [A:79 | B:35 | C:57]
+  Step  3 | Score: 0.8113 | A=5 -> [A(A1)+C(A0)+B(A0)] | Surv: [A:77 | B:34 | C:56]
+  Step  4 | Score: 0.8042 | A=4 -> [A(A1)+C(A0)+B(A0)] | Surv: [A:75 | B:33 | C:55]
+  Step  5 | Score: 0.8046 | A=4 -> [A(A0)+C(A0)+B(A0)] | Surv: [A:72 | B:33 | C:55]
+  Step  6 | Score: 0.7759 | A=4 -> [A(A0)+C(A0)+B(A0)] | Surv: [A:70 | B:31 | C:53]
+  Step  7 | Score: 0.7599 | A=4 -> [A(A0)+C(A0)+B(A0)] | Surv: [A:68 | B:28 | C:52]
+  Step  8 | Score: 0.7552 | A=4 -> [A(A0)+C(A0)+B(A0)] | Surv: [A:66 | B:26 | C:52]
+  Step  9 | Score: 0.7262 | A=4 -> [A(A0)+C(A0)+B(A0)] | Surv: [A:64 | B:25 | C:49]
+  Step 10 | Score: 0.6724 | A=4 -> [A(A0)+C(A0)+B(A0)] | Surv: [A:63 | B:22 | C:46]
+  Step 11 | Score: 0.6637 | A=4 -> [A(A0)+C(A0)+B(A0)] | Surv: [A:62 | B:19 | C:43]
+  Step 12 | Score: 0.6676 | A=4 -> [A(A0)+C(A0)+B(A0)] | Surv: [A:61 | B:18 | C:42]
+  Step 13 | Score: 0.6772 | A=4 -> [A(A0)+C(A0)+B(A0)] | Surv: [A:59 | B:16 | C:42]
+  Step 14 | Score: 0.6709 | A=4 -> [A(A0)+C(A0)+B(A0)] | Surv: [A:59 | B:13 | C:41]
+  Step 15 | Score: 0.7048 | A=0 -> [A(A4)+C(A0)+B(A0)] | Surv: [A:59 | B:11 | C:39]
+
+Running task_hard...
+  Step  1 | Score: 0.8436 | A=7 -> [D(A2)+B(A4)+A(A2)+C(A0)] | Surv: [A:100 | B:70 | C:54 | D:39]
+  Step  2 | Score: 0.8340 | A=0 -> [D(A2)+B(A4)+A(A1)+C(A0)] | Surv: [A:99 | B:70 | C:52 | D:39]
+  Step  3 | Score: 0.8179 | A=0 -> [A(A0)+B(A0)+C(A0)] | Surv: [A:97 | B:69 | C:50 | D:39]
+  Step  4 | Score: 0.8019 | A=0 -> [A(A0)+B(A0)+C(A0)] | Surv: [A:97 | B:66 | C:48 | D:39]
+  Step  5 | Score: 0.7762 | A=0 -> [A(A0)+B(A0)+C(A0)] | Surv: [A:94 | B:64 | C:45 | D:39]
+  Step  6 | Score: 0.7570 | A=0 -> [A(A0)+B(A0)+C(A0)] | Surv: [A:91 | B:63 | C:43 | D:39]
+  Step  7 | Score: 0.7345 | A=0 -> [A(A0)+B(A0)+C(A0)] | Surv: [A:89 | B:60 | C:41 | D:39]
+  Step  8 | Score: 0.7217 | A=0 -> [A(A0)+B(A0)+C(A0)] | Surv: [A:88 | B:58 | C:40 | D:39]
+  Step  9 | Score: 0.7025 | A=0 -> [A(A0)+B(A0)+C(A0)] | Surv: [A:87 | B:55 | C:38 | D:39]
+  Step 10 | Score: 0.7055 | A=0 -> [A(A0)+B(A0)+C(A0)] | Surv: [A:86 | B:53 | C:36 | D:39 | E:35]
+  Step 11 | Score: 0.7913 | A=0 -> [A(A0)+B(A0)+C(A0)+E(A0)] | Surv: [A:86 | B:50 | C:35 | D:39 | E:34]
+  Step 12 | Score: 0.7715 | A=0 -> [A(A0)+B(A0)+C(A0)+E(A0)] | Surv: [A:84 | B:48 | C:33 | D:39 | E:33]
+  Step 13 | Score: 0.7488 | A=0 -> [A(A0)+B(A0)+C(A0)+E(A0)] | Surv: [A:83 | B:45 | C:31 | D:39 | E:31]
+  Step 14 | Score: 0.7403 | A=0 -> [A(A0)+B(A0)+C(A0)+E(A0)] | Surv: [A:82 | B:43 | C:31 | D:39 | E:31]
+  Step 15 | Score: 0.7290 | A=0 -> [A(A0)+B(A0)+C(A0)+E(A0)] | Surv: [A:81 | B:40 | C:31 | D:39 | E:31]
+  Step 16 | Score: 0.7120 | A=0 -> [A(A0)+B(A0)+C(A0)+E(A0)] | Surv: [A:80 | B:39 | C:28 | D:39 | E:30]
+  Step 17 | Score: 0.7007 | A=0 -> [A(A0)+B(A0)+E(A0)+C(A0)] | Surv: [A:80 | B:38 | C:26 | D:39 | E:29]
+  Step 18 | Score: 0.6865 | A=0 -> [A(A0)+B(A0)+E(A0)+C(A0)] | Surv: [A:79 | B:38 | C:25 | D:39 | E:26]
+  Step 19 | Score: 0.6752 | A=0 -> [A(A0)+B(A0)+E(A0)+C(A0)] | Surv: [A:77 | B:37 | C:24 | D:39 | E:26]
+  Step 20 | Score: 0.6497 | A=0 -> [A(A0)+B(A0)+E(A0)+C(A0)] | Surv: [A:74 | B:36 | C:22 | D:39 | E:23]
+
+==================================================
+  task_easy      : 0.7600
+  task_medium    : 0.7048
+  task_hard      : 0.6497
+
+  Validation passing: YES
+==================================================
