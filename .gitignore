@@ -1,0 +1,9 @@
+
+*.txt
+*_output.*
+old_*.py
+*_test.py
+local_*.py
+optimizer.py
+demo_run.py
+results.json
