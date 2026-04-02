@@ -1,220 +1,237 @@
+import argparse
+import sys
 import os
-import json
-import httpx
 import time
-from openai import OpenAI
+import httpx
 
-# Read env vars
 API_BASE_URL = os.getenv("API_BASE_URL", "http://localhost:7860")
-MODEL_NAME = os.getenv("MODEL_NAME", "meta-llama/Llama-3.1-8B-Instruct")
-HF_TOKEN = os.getenv("HF_TOKEN", "")
-LLM_BASE_URL = os.getenv("LLM_BASE_URL", "https://api-inference.huggingface.co/v1")
 
-client = OpenAI(base_url=LLM_BASE_URL, api_key=HF_TOKEN)
-
-def format_state_for_llm(state: dict) -> str:
-    """Format the state as readable text showing: step count, time remaining, available resources, each zone with its disaster type / severity / survivors / resources needed / time_critical status."""
-    lines = []
-    lines.append(f"Step Count: {state.get('step_count', 0)}")
-    lines.append(f"Time Remaining: {state.get('time_remaining', 0)}")
+def smart_agent_action(state, step_num, prev_zone_survivors):
+    zones = state.get("zones", [])
     
-    res = state.get('resources', {})
-    lines.append(f"Available Resources: Ambulances: {res.get('ambulances', 0)}, Rescue Teams: {res.get('rescue_teams', 0)}, Food Packets: {res.get('food_packets', 0)}")
-    
-    lines.append("\nZones:")
-    for zone in state.get('zones', []):
-        zn_id = zone.get('zone_id')
-        dtype = zone.get('disaster_type')
-        sev = zone.get('severity')
-        sur = zone.get('survivors')
-        needs = zone.get('resources_needed', {})
-        tc = "YES" if zone.get('time_critical') else "NO"
-        
-        lines.append(f"- Zone {zn_id}: {dtype} (Severity: {sev}) | Survivors: {sur} | Needs: {needs} | Time Critical: {tc}")
-    
-    return "\n".join(lines)
-
-def parse_llm_action(response_text: str, state: dict) -> dict:
-    """Try to parse JSON from the LLM response. Look for JSON between curly braces. If parsing fails, create a fallback action that deploys half of available resources to the most severe zone. Always validate that deployments don't exceed available resources — clip if needed."""
-    try:
-        # Look for JSON between curly braces
-        start = response_text.find('{')
-        end = response_text.rfind('}') + 1
-        if start != -1 and end != 0:
-            action_data = json.loads(response_text[start:end])
-        else:
-            raise ValueError("No JSON found")
-    except (json.JSONDecodeError, ValueError):
-        # Fallback action: deploy half of available resources to the most severe zone
-        res = state.get('resources', {})
-        zones = state.get('zones', [])
-        if not zones:
-            return {"deployments": []}
+    # Step 1 - Calculate triage score per zone
+    active_zones = []
+    for z in zones:
+        if z.get("contained", False) or z.get("survivors", 0) == 0:
+            continue
+        try:
+            triage = z["severity"] * z["survivors"] * (2.0 if z.get("time_critical") else 1.0) * z["accessibility"]
+            active_zones.append((triage, z))
+        except KeyError:
+            active_zones.append((0.0, z))
             
-        target_zone = max(zones, key=lambda z: z.get('severity', 0))
-        action_data = {
-            "deployments": [{
-                "zone_id": target_zone['zone_id'],
-                "ambulances": int(res.get('ambulances', 0) * 0.5),
-                "rescue_teams": int(res.get('rescue_teams', 0) * 0.5),
-                "food_packets": int(res.get('food_packets', 0) * 0.5),
-                "priority": 5
-            }]
+    # sort zones by triage descending
+    active_zones.sort(key=lambda x: x[0], reverse=True)
+    sorted_zones = [z for _, z in active_zones]
+
+    if not sorted_zones:
+        return {"deployments": []}
+
+    # Step 2 - Calculate budget for this step
+    steps_left = state.get("time_remaining", 1)
+    spend_ratio = min(0.45, 1.0 / max(1, steps_left))
+    # this naturally increases spending as time runs out
+    
+    res = state.get("resources", {})
+    budget_ambu = max(1, int(res.get("ambulances", 0) * spend_ratio)) if res.get("ambulances", 0) > 0 else 0
+    budget_teams = max(1, int(res.get("rescue_teams", 0) * spend_ratio)) if res.get("rescue_teams", 0) > 0 else 0
+    budget_food = max(1, int(res.get("food_packets", 0) * spend_ratio)) if res.get("food_packets", 0) > 0 else 0
+
+    # Step 4 - Handle Zone E reveal (task_hard)
+    override_zone = None
+    for z in sorted_zones:
+        zid = z["zone_id"]
+        # If any zone has survivors > 0 AND was previously survivors == 0
+        if z["survivors"] > 0 and prev_zone_survivors.get(zid, -1) == 0:
+            override_zone = z
+            break
+            
+    deployments = {}
+    
+    a_avail = res.get("ambulances", 0)
+    r_avail = res.get("rescue_teams", 0)
+    f_avail = res.get("food_packets", 0)
+
+    if override_zone:
+        zid = override_zone["zone_id"]
+        a_dep = min(a_avail, max(1, int(budget_ambu * 0.5)))
+        r_dep = min(r_avail, max(1, int(budget_teams * 0.5)))
+        f_dep = min(f_avail, max(1, int(budget_food * 0.5)))
+        
+        needed = override_zone.get("resources_needed", {})
+        a_dep = min(a_dep, needed.get("ambulances", 0))
+        r_dep = min(r_dep, needed.get("rescue_teams", 0))
+        f_dep = min(f_dep, needed.get("food_packets", 0))
+
+        if override_zone.get("time_critical"):
+            a_dep = max(1 if a_avail > 0 else 0, a_dep)
+            r_dep = max(1 if r_avail > 0 else 0, r_dep)
+            f_dep = max(1 if f_avail > 0 else 0, f_dep)
+
+        deployments[zid] = {
+            "ambulances": a_dep,
+            "rescue_teams": r_dep,
+            "food_packets": f_dep,
+            "priority": 1 # priority=1 override
         }
-    
-    # Validate and clip deployments
-    res_pool = state.get('resources', {})
-    total_a = 0
-    total_r = 0
-    total_f = 0
-    
-    valid_deployments = []
-    for d in action_data.get("deployments", []):
-        a = max(0, int(d.get("ambulances", 0)))
-        r = max(0, int(d.get("rescue_teams", 0)))
-        f = max(0, int(d.get("food_packets", 0)))
         
-        # Simple clipping to avoid over-deployment across multiple zones
-        if total_a + a > res_pool.get("ambulances", 0):
-            a = max(0, res_pool.get("ambulances", 0) - total_a)
-        if total_r + r > res_pool.get("rescue_teams", 0):
-            r = max(0, res_pool.get("rescue_teams", 0) - total_r)
-        if total_f + f > res_pool.get("food_packets", 0):
-            f = max(0, res_pool.get("food_packets", 0) - total_f)
+        sorted_zones = [z for z in sorted_zones if z["zone_id"] != zid]
+        budget_ambu -= a_dep
+        budget_teams -= r_dep
+        budget_food -= f_dep
+        a_avail -= a_dep
+        r_avail -= r_dep
+        f_avail -= f_dep
+
+    # Step 3 - Distribute budget across top zones
+    shares = [0.60, 0.30, 0.10]
+    for i, z in enumerate(sorted_zones[:3]):
+        zid = z["zone_id"]
+        share = shares[i]
+        
+        a_share = int(budget_ambu * share)
+        r_share = int(budget_teams * share)
+        f_share = int(budget_food * share)
+        
+        needed = z.get("resources_needed", {})
+        
+        a_dep = min(needed.get("ambulances", 0), a_share)
+        r_dep = min(needed.get("rescue_teams", 0), r_share)
+        f_dep = min(needed.get("food_packets", 0), f_share)
+        
+        # Never send 0 to a time_critical zone — minimum 1 of each resource
+        if z.get("time_critical"):
+            a_dep = max(1 if a_avail > 0 else 0, a_dep)
+            r_dep = max(1 if r_avail > 0 else 0, r_dep)
+            f_dep = max(1 if f_avail > 0 else 0, f_dep)
+
+        # Assure we don't exceed what is available overall
+        a_dep = min(a_dep, a_avail)
+        r_dep = min(r_dep, r_avail)
+        f_dep = min(f_dep, f_avail)
+        
+        deployments[zid] = {
+            "ambulances": a_dep,
+            "rescue_teams": r_dep,
+            "food_packets": f_dep,
+            "priority": 1 if z.get("time_critical") else 3
+        }
+        
+        a_avail -= a_dep
+        r_avail -= r_dep
+        f_avail -= f_dep
+
+    # Step 5 - Build Action dict
+    deps_list = []
+    for zid, d in deployments.items():
+        # Only include zones where at least one resource > 0
+        if d["ambulances"] > 0 or d["rescue_teams"] > 0 or d["food_packets"] > 0:
+            deps_list.append({
+                "zone_id": zid,
+                "ambulances": d["ambulances"],
+                "rescue_teams": d["rescue_teams"],
+                "food_packets": d["food_packets"],
+                "priority": d["priority"]
+            })
             
-        total_a += a
-        total_r += r
-        total_f += f
-        
-        valid_deployments.append({
-            "zone_id": d.get("zone_id"),
-            "ambulances": a,
-            "rescue_teams": r,
-            "food_packets": f,
-            "priority": d.get("priority", 3)
-        })
-        
-    return {"deployments": valid_deployments}
+    return {"deployments": deps_list}
 
-def call_llm(prompt: str, system: str) -> str:
-    """Call client.chat.completions.create with model=MODEL_NAME, messages=[system, user], max_tokens=500, temperature=0.1. Return the content string. Wrap in try/except, return empty string on failure."""
-    try:
-        response = client.chat.completions.create(
-            model=MODEL_NAME,
-            messages=[
-                {"role": "system", "content": system},
-                {"role": "user", "content": prompt}
-            ],
-            max_tokens=500,
-            temperature=0.1
-        )
-        return response.choices[0].message.content or ""
-    except Exception as e:
-        print(f"LLM call failed: {e}")
-        return ""
+def llm_agent_action(state, step_num):
+    # Dummy fallback path when passing --agent llm
+    print("LLM path called, but not fully implemented.")
+    return {"deployments": []}
 
-def run_task(task_id: str, base_url: str) -> float:
-    """Run a single task. Handle connection errors gracefully with retries (3 attempts, 2 second wait)."""
+def run_task(task_id: str, base_url: str, agent_type: str) -> float:
     url = base_url.rstrip("/")
-    with httpx.Client(timeout=30.0) as http_client:
-        # 1. POST {base_url}/reset with {"task_id": task_id, "seed": 42}
+    with httpx.Client(timeout=30.0) as http:
         for attempt in range(3):
             try:
-                resp = http_client.post(f"{url}/reset", json={"task_id": task_id, "seed": 42})
+                resp = http.post(f"{url}/reset", json={"task_id": task_id, "seed": 42})
                 resp.raise_for_status()
                 break
-            except (httpx.RequestError, httpx.HTTPStatusError) as e:
-                if attempt == 2: 
-                    print(f"Failed to reset task {task_id}: {e}")
-                    return 0.0
-                time.sleep(2)
-        
-        # 2. Print "Running {task_id}..."
-        print(f"Running {task_id}...")
-        
-        # 3. Loop
+            except Exception as e:
+                time.sleep(1)
+
+        print(f"\nRunning {task_id} with agent={agent_type}...")
+        step_num = 0
+        prev_zones = {}
+
         while True:
-            # a. GET {base_url}/state
-            state_data = None
             for attempt in range(3):
                 try:
-                    resp = http_client.get(f"{url}/state")
+                    resp = http.get(f"{url}/state")
                     resp.raise_for_status()
                     state_data = resp.json()
                     break
-                except (httpx.RequestError, httpx.HTTPStatusError) as e:
-                    if attempt == 2: 
-                        print(f"Failed to get state for {task_id}: {e}")
-                        return 0.0
-                    time.sleep(2)
-            
-            # i. If response["done"] is True: print final score, return response["score"]
+                except Exception as e:
+                    time.sleep(1)
+            else:
+                print("Failed to get state.")
+                break
+
             if state_data.get("done"):
-                print(f"Final score for {task_id}: {state_data.get('score', 0.0):.2f}")
                 return state_data.get("score", 0.0)
-            
+
             state = state_data.get("state", {})
-            
-            # b. Format state as text
-            state_text = format_state_for_llm(state)
-            
-            # c. Build system prompt
-            system_prompt = (
-                "You are a disaster response commander. Given the current disaster state and your available resources, "
-                "decide how to deploy resources. Output ONLY a JSON object with key deployments, which is a list of "
-                "objects each with: zone_id (string), ambulances (int), rescue_teams (int), food_packets (int), priority (int 1-5). "
-                "Deploy only what is available. Prioritise time_critical zones and highest severity."
-            )
-            
-            # d. Build user prompt using format_state_for_llm (handled in state_text)
-            
-            # e. Call call_llm
-            response_text = call_llm(state_text, system_prompt)
-            
-            # f. Parse action using parse_llm_action
-            action = parse_llm_action(response_text, state)
-            
-            # g. POST {base_url}/step with the action
+            step_num += 1
+
+            if step_num == 1:
+                # Initialize previous tracking for step 1
+                prev_zones = {z["zone_id"]: z.get("survivors", 0) for z in state.get("zones", [])}
+
+            if agent_type == "rule":
+                action = smart_agent_action(state, step_num, prev_zones)
+            else:
+                action = llm_agent_action(state, step_num)
+
             for attempt in range(3):
                 try:
-                    resp = http_client.post(f"{url}/step", json=action)
+                    resp = http.post(f"{url}/step", json=action)
                     resp.raise_for_status()
                     step_resp = resp.json()
+
+                    score = step_resp.get("score", 0.0)
+                    new_st = step_resp.get("state", {})
                     
-                    # h. Print step reward from response
-                    reward = step_resp.get('reward', 0.0)
-                    print(f"Step Reward: {reward:.2f}")
-                    
-                    # i. If response["done"] is True: print final score, return response["score"]
+                    # Track prev_zone_survivors after each step response
+                    prev_zones = {z["zone_id"]: z.get("survivors", 0) for z in new_st.get("zones", [])}
+
+                    deps = "+".join(f"{d['zone_id']}(A{d['ambulances']})" for d in action.get("deployments", []))
+                    sv = " | ".join(f"{z['zone_id']}:{z['survivors']}" for z in new_st.get("zones", []) if z.get("survivors",0)>0)
+                    print(f"  Step {step_num:2d} | Score: {score:.4f} | A={new_st.get('resources',{}).get('ambulances',0)} -> [{deps}] | Surv: [{sv}]")
+
                     if step_resp.get("done"):
-                        score = step_resp.get("score", 0.0)
-                        print(f"Final score for {task_id}: {score:.2f}")
                         return score
                     break
-                except (httpx.RequestError, httpx.HTTPStatusError) as e:
-                    if attempt == 2: 
-                        print(f"Failed to step for {task_id}: {e}")
-                        return 0.0
-                    time.sleep(2)
-            
-            # j. time.sleep(0.5) to avoid rate limits
-            time.sleep(0.5)
-            
+                except Exception as e:
+                    time.sleep(1)
+            else:
+                return score
+            time.sleep(0.05)
     return 0.0
 
 def main():
+    parser = argparse.ArgumentParser(description="CrisisFlow Agent Inference")
+    parser.add_argument("--agent", choices=["rule", "llm"], default="rule", help="Choose between rule or llm agent")
+    args = parser.parse_args()
+
     scores = {}
     for task_id in ["task_easy", "task_medium", "task_hard"]:
-        score = run_task(task_id, API_BASE_URL)
+        score = run_task(task_id, API_BASE_URL, args.agent)
         scores[task_id] = score
-        
-    print("\n" + "="*30)
-    print(f"Task easy   score: {scores.get('task_easy', 0.0):.2f}")
-    print(f"Task medium score: {scores.get('task_medium', 0.0):.2f}")
-    print(f"Task hard   score: {scores.get('task_hard', 0.0):.2f}")
-    avg = sum(scores.values()) / len(scores) if scores else 0.0
-    print(f"Average score: {avg:.2f}")
-    print("="*30)
+
+    print("\n" + "=" * 50)
+    for t in scores:
+        print(f"  {t:15s}: {scores[t]:.4f}")
+    
+    thresholds = {"task_easy": 0.75, "task_medium": 0.70, "task_hard": 0.60}
+    all_pass = True
+    for tid, thresh in thresholds.items():
+        if scores[tid] < thresh:
+            all_pass = False
+
+    print(f"\n  Validation passing: {'YES' if all_pass else 'NO'}")
+    print("=" * 50)
 
 if __name__ == "__main__":
     main()

@@ -17,12 +17,15 @@ The simulation operates on a discrete-time basis. Disasters spawn across multipl
 | `zone.resources_needed` | `object` | Required ambulances, rescue_teams, food_packets | - |
 | `zone.time_critical` | `boolean` | Whether the zone requires immediate attention | True/False |
 | `zone.accessibility` | `float` | Multiplier for resource effectiveness | 0.0 - 1.0 |
+| `zone.contained` | `boolean` | Whether the zone is contained | True/False |
 | `resources.ambulances` | `int` | Remaining ambulances in the pool | 0+ |
 | `resources.rescue_teams` | `int` | Remaining rescue teams in the pool | 0+ |
 | `resources.food_packets` | `int` | Remaining food packets in the pool | 0+ |
-| `time_remaining` | `int` | Steps left in the episode | 0 - 25 |
-| `step_count` | `int` | Number of steps taken so far | 0 - 25 |
+| `time_remaining` | `int` | Steps left in the episode | 0 - 20 |
+| `step_count` | `int` | Number of steps taken so far | 0 - 20 |
 | `cumulative_reward` | `float` | Total reward earned in the episode | - |
+| `task_id` | `string` | Active task key (e.g. task_easy) | - |
+| `seed` | `int` | PRNG seed for this episode | - |
 
 ## Action space
 | Field | Type | Description | Constraints |
@@ -44,10 +47,10 @@ The simulation operates on a discrete-time basis. Disasters spawn across multipl
 ## Reward function
 | Component | Weight | What it measures | Good behaviour it encourages |
 |-----------|--------|------------------|------------------------------|
-| Survivor Improvement | 0.50 | Ratio of lives saved relative to initial total | Saving lives quickly and effectively |
-| Time-Criticality | 0.20 | Deployment to urgent zones | Prioritizing zones where time is of the essence |
-| Resource Efficiency | 0.15 | Matching deployment to `resources_needed` | Optimal allocation without waste or shortage |
-| Severity Reduction | 0.15 | Containment of high-severity (>0.75) zones | Focusing on the most dangerous hazard zones |
+| Survivors Saved | 0.50 | Reduction in harm / effective aid to populations at risk | Saving lives quickly and effectively |
+| Response Time | 0.20 | Penalize delay; prioritize time-critical zones | Prioritizing zones where time is of the essence |
+| Resource Efficiency | 0.15 | Favor useful deployments versus waste or idle pool | Optimal allocation without waste or shortage |
+| Cascade Prevention | 0.15 | Limit severity growth and cross-zone escalation | Focusing on the most dangerous hazard zones |
 
 ## Setup instructions
 1. Clone the repository:
