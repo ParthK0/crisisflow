@@ -1,3 +1,12 @@
+---
+title: CrisisFlow
+emoji: ??
+colorFrom: red
+colorTo: orange
+sdk: docker
+app_port: 7860
+pinned: false
+---
 # CrisisFlow — AI Disaster Response Environment
 
 CrisisFlow is an OpenEnv environment where an AI agent acts as an emergency operations commander allocating limited resources across disaster zones to maximise survivor outcomes. The agent must balance competing priorities, manage dwindling supplies, and respond to dynamic, multi-hazard scenarios ranging from urban floods to systemic health crises.
@@ -123,3 +132,4 @@ docker run -p 7860:7860 crisisflow
 
 ## Hugging Face Space
 The environment and baseline agent can be viewed/deployed at: [https://huggingface.co/spaces/ParthK0/crisisflow](https://huggingface.co/spaces/ParthK0/crisisflow)
+
